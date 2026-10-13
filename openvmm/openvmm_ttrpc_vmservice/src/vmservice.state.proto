@@ -1,0 +1,14 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+syntax = 'proto3';
+
+package vmservice;
+option go_package = "vmservice";
+
+enum VmState {
+    Uninitialized = 0;
+    Paused        = 1;
+    Running       = 2;
+    Halted        = 3; // Powered off.
+}

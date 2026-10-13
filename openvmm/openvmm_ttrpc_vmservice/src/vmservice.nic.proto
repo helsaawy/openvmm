@@ -1,0 +1,72 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+syntax = 'proto3';
+
+package vmservice;
+option go_package = "vmservice";
+message NICConfig {
+    string nic_id           = 1; // GUID
+    string mac_address      = 3; // 12-34-56-78-9A-BC
+    string legacy_switch_id = 4; // GUID, used only with legacy_port_id below
+    // Optional friendly name for the adapter. Might be useful to show up in logs.
+    string nic_name = 5;
+    oneof backend {
+        string legacy_port_id    = 2; // legacy, GUID, Windows only
+        DioBackend dio           = 6;
+        TapBackend tap           = 7;
+        ConsommeBackend consomme = 8;
+    }
+}
+
+// A host network backend, shared across NIC device types (virtio-net, MANA,
+// vmbus netvsp, ...).
+message NicBackend {
+    oneof kind {
+        // DirectIO backend bound to a host switch/port.
+        DioBackend dio = 1;
+        // Host TAP device backend.
+        TapBackend tap = 2;
+        // Built-in user-mode (consomme) network backend.
+        ConsommeBackend consomme = 3;
+    }
+}
+
+message DioBackend {
+    string switch_id = 1; // GUID
+    string port_id   = 2; // GUID
+}
+
+message TapBackend {
+    oneof source {
+        // Open /dev/net/tun by this device name (existing behavior).
+        string name = 1;
+        // Use the file descriptor registered under this name via the
+        // fd-passing protocol (see fd_passing.md).
+        string fd_name = 2;
+    }
+}
+
+enum IpProtocol {
+    TCP = 0;
+    UDP = 1;
+}
+
+message PortConfig {
+    // The host port to listen on.
+    uint32 host_port = 1;
+    // The guest port to forward to.
+    uint32 guest_port = 2;
+    // The protocol to forward.
+    IpProtocol protocol = 3;
+    string host_address = 4;
+}
+
+message ConsommeBackend {
+    // Optional CIDR for the guest network (e.g. "10.0.0.0/24").
+    // If empty, a default is used.
+    string cidr = 1;
+    // Ports to forward from the host into the guest.
+    // Used during initial creation and for dynamic add/remove via ModifyResource.
+    repeated PortConfig ports = 2;
+}
